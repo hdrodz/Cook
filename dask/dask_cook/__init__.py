@@ -38,7 +38,7 @@ class CookJobException(Exception):
 class CookJob(ProcessInterface):
     """An instance of a job running on Cook.
 
-    :param client: Client instance through which requests should be made.
+    :param client: Client instance through which Cook requests should be made.
     :type client: JobClient
     :param scheduler: Address of the Dask scheduler.
     :type scheduler: str
@@ -54,6 +54,7 @@ class CookJob(ProcessInterface):
     :param monitor_poll_frequency: Time to wait in between job status poll
         invocations inside the monitor thread. If a scalar is provided, then
         the value is interpreted as a number of seconds. Defaults to 30s.
+    :type monitor_poll_frequency: float or timedelta
     """
 
     def __init__(self, *,
@@ -175,8 +176,43 @@ class CookJob(ProcessInterface):
 
 
 class Worker(CookJob):
+    """Wrapper around CookJob for running ``dask-worker`` on Cook.
+
+    :param client: Client instance through which Cook requests should be made.
+    :type client: JobClient
+    :param scheduler: Address of the Dask scheduler.
+    :type scheduler: str
+    :param name: Name of the worker.
+    :type name: str
+    :param init_kill_poll_frequency: Time to wait in between job status poll
+        invocations during job init and kill. If a scalar is provided, then
+        the value is interpreted as a number of seconds. Defaults to 5s.
+    :type init_kill_poll_frequency: float or timedelta
+    :param monitor_poll_frequency: Time to wait in between job status poll
+        invocations inside the monitor thread. If a scalar is provided, then
+        the value is interpreted as a number of seconds. Defaults to 30s.
+    :type monitor_poll_frequency: float or timedelta
+    :param worker_args_overrides: Extra arguments to provide to the
+        ``dask-worker`` process on init.
+    :type worker_args_overrides: dict
+    :param jobspec_overrides: Extra parameters to set on the jobspec to be
+        submitted to Cook.
+    :type jobspec_overrides: dict
+    """
     _DEFAULT_JOBSPEC = {
+        'command': 'dask-worker %s',
+        'name': 'dask-%s',
+
+        'cpus': 1.0,
+        'mem': 4 * 1024.0,
+        'max_retries': 1,
+
         'application': Application('dask_cook', VERSION)
+    }
+
+    _DEFAULT_WORKER_ARGS = {
+        '--worker-port': 3000,
+        '--host': '0.0.0.0',
     }
 
     def __init__(self, *,
@@ -185,7 +221,16 @@ class Worker(CookJob):
                  name: str,
                  init_kill_poll_frequency: Union[float, timedelta] = 5,
                  monitor_poll_frequency: Union[float, timedelta] = 30,
-                 jobspec: dict = {}):
+                 worker_args_overrides: dict = {},
+                 jobspec_overrides: dict = {}):
+        worker_args = Worker._DEFAULT_WORKER_ARGS
+        worker_args.update(worker_args_overrides)
+
+        jobspec = Worker._DEFAULT_JOBSPEC
+        jobspec['command'] %= Worker._format_worker_args(worker_args)
+        jobspec['name'] %= name
+        jobspec.update(jobspec_overrides)
+
         super().__init__(client=client,
                          scheduler=scheduler,
                          name=name,
@@ -193,3 +238,8 @@ class Worker(CookJob):
                          monitor_poll_frequency=monitor_poll_frequency,
                          jobspec=jobspec)
         pass
+
+    @staticmethod
+    def _format_worker_args(args: dict):
+        """Format a dict as Unix command-line arguments."""
+        return ' '.join(f'{key} "{value}"' for key, value in args.items())
