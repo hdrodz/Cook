@@ -8,10 +8,16 @@ from threading import Thread
 from typing import Union
 
 from cookclient import JobClient
-from cookclient.jobs import Job, Status as JobStatus, State as JobState
+from cookclient.jobs import (
+    Application,
+    Job,
+    State as JobState,
+    Status as JobStatus,
+)
 
 from distributed.deploy import ProcessInterface
 
+VERSION = '0.1.0'
 
 _LOG = logging.getLogger(__name__)
 
@@ -166,3 +172,24 @@ class CookJob(ProcessInterface):
             self.status = 'restarting'
             await self.start()
             self.status = 'running'
+
+
+class Worker(CookJob):
+    _DEFAULT_JOBSPEC = {
+        'application': Application('dask_cook', VERSION)
+    }
+
+    def __init__(self, *,
+                 client: JobClient,
+                 scheduler: str,
+                 name: str,
+                 init_kill_poll_frequency: Union[float, timedelta] = 5,
+                 monitor_poll_frequency: Union[float, timedelta] = 30,
+                 jobspec: dict = {}):
+        super().__init__(client=client,
+                         scheduler=scheduler,
+                         name=name,
+                         init_kill_poll_frequency=init_kill_poll_frequency,
+                         monitor_poll_frequency=monitor_poll_frequency,
+                         jobspec=jobspec)
+        pass
