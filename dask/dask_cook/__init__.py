@@ -1,4 +1,5 @@
 import asyncio
+import copy
 import json
 import logging
 import time
@@ -227,10 +228,10 @@ class Worker(CookJob):
                  monitor_poll_frequency: Union[float, timedelta] = 30,
                  worker_args_overrides: dict = {},
                  jobspec_overrides: dict = {}):
-        worker_args = Worker._DEFAULT_WORKER_ARGS
+        worker_args = copy.deepcopy(Worker._DEFAULT_WORKER_ARGS)
         worker_args.update(worker_args_overrides)
 
-        jobspec = Worker._DEFAULT_JOBSPEC
+        jobspec = copy.deepcopy(Worker._DEFAULT_JOBSPEC)
         jobspec['command'] %= Worker._format_worker_args(worker_args)
         jobspec['name'] %= name
         jobspec.update(jobspec_overrides)
