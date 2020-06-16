@@ -10,6 +10,7 @@ from threading import Thread
 from typing import Union
 
 from cookclient import JobClient
+from cookclient.containers import DockerContainer
 from cookclient.jobs import (
     Application,
     Job,
@@ -96,7 +97,7 @@ class CookJob(ProcessInterface):
         long-running process on Cook.
         """
         await self._start_helper()
-        Thread(self._monitor_thread_main).start()
+        Thread(target=self._monitor_thread_main).start()
         await super().start()
 
     async def _start_helper(self):
@@ -207,14 +208,15 @@ class Worker(CookJob):
     :type jobspec_overrides: dict
     """
     _DEFAULT_JOBSPEC = {
-        'command': 'dask-worker %s',
+        'command': 'dask-worker',
         'name': 'dask-%s',
 
         'cpus': 1.0,
         'mem': 4 * 1024.0,
         'max_retries': 1,
 
-        'application': Application('dask_cook', VERSION)
+        'application': Application('dask_cook', VERSION),
+        'container': DockerContainer('daskdev/dask:2.17.0')
     }
 
     _DEFAULT_WORKER_ARGS = {
@@ -233,7 +235,7 @@ class Worker(CookJob):
         worker_args.update(worker_args_overrides)
 
         jobspec = copy.deepcopy(Worker._DEFAULT_JOBSPEC)
-        jobspec['command'] %= Worker._format_worker_args(worker_args)
+        # jobspec['command'] %= Worker._format_worker_args(worker_args)
         jobspec['name'] %= name
         jobspec.update(jobspec_overrides)
 
