@@ -23,7 +23,8 @@ from distributed.deploy import ProcessInterface
 VERSION = '0.1.0'
 
 _LOG = logging.getLogger(__name__)
-_LOG.setLevel('DEBUG')
+_LOG.addHandler(logging.StreamHandler())
+_LOG.setLevel(logging.DEBUG)
 
 
 class CookJobException(Exception):
