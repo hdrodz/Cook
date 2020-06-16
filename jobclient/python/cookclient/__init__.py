@@ -24,6 +24,7 @@ from urllib.parse import urlencode, urlparse, urlunparse
 from uuid import UUID
 
 from . import util
+from .containers import AbstractContainer
 from .jobs import Application, Job
 
 CLIENT_VERSION = '0.1.0'
@@ -106,7 +107,9 @@ class JobClient:
                max_runtime: timedelta = timedelta(days=1),
                name: str = f'{getpass.getuser()}-job',
                priority: Optional[int] = None,
+               container: Optional[AbstractContainer] = None,
                application: Application = _CLIENT_APP,
+
                pool: Optional[str] = None,
 
                **kwargs) -> UUID:
@@ -173,6 +176,8 @@ class JobClient:
             payload['priority'] = priority
         if application is not None:
             payload['application'] = application.to_dict()
+        if container is not None:
+            payload['container'] = container.to_dict()
         payload = {'jobs': [payload]}
 
         # Pool requests are assigned to the group payload instead of each
