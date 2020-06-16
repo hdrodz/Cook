@@ -15,6 +15,7 @@ from cookclient.jobs import (
     Status as JobStatus,
 )
 
+from distributed import SpecCluster
 from distributed.deploy import ProcessInterface
 
 VERSION = '0.1.0'
@@ -180,8 +181,10 @@ class Worker(CookJob):
 
     :param client: Client instance through which Cook requests should be made.
     :type client: JobClient
-    :param scheduler: Address of the Dask scheduler.
-    :type scheduler: str
+    :param scheduler_ip: IP address of the Dask scheduler.
+    :type scheduler_ip: str
+    :param scheduler_port: Port of the Dask scheduler.
+    :type scheduler_port: int
     :param name: Name of the worker.
     :type name: str
     :param init_kill_poll_frequency: Time to wait in between job status poll
@@ -217,7 +220,8 @@ class Worker(CookJob):
 
     def __init__(self, *,
                  client: JobClient,
-                 scheduler: str,
+                 scheduler_ip: str,
+                 scheduler_port: int,
                  name: str,
                  init_kill_poll_frequency: Union[float, timedelta] = 5,
                  monitor_poll_frequency: Union[float, timedelta] = 30,
@@ -232,7 +236,7 @@ class Worker(CookJob):
         jobspec.update(jobspec_overrides)
 
         super().__init__(client=client,
-                         scheduler=scheduler,
+                         scheduler=f'{scheduler_ip}:{scheduler_port}',
                          name=name,
                          init_kill_poll_frequency=init_kill_poll_frequency,
                          monitor_poll_frequency=monitor_poll_frequency,
@@ -243,3 +247,45 @@ class Worker(CookJob):
     def _format_worker_args(args: dict):
         """Format a dict as Unix command-line arguments."""
         return ' '.join(f'{key} "{value}"' for key, value in args.items())
+
+
+class CookCluster(SpecCluster):
+    """A cluster of worker machines running on Cook.
+
+    This class provides the bridge between Dask and Cook.
+
+    :param remote: Connection information for connecting to the Cook instance.
+        Can be a string or a ``JobClient`` instance. If this parameter is a
+        string, then a new ``JobClient`` will be created with the default
+        options and using the string as the Cook URL. Otherwise, the provided
+        ``JobClient`` instance will be used for connecting to Cook. Note that
+        the ``CookCluster`` instance will take ownership of the client and will
+        therefore close the client when it is closed.
+    :type remote: str or JobClient
+    :param worker_cls_args_overrides: Arguments to provide to the ``Worker``
+        constructor when a new worker is spawned.
+    :type worker_cls_args_ovverrides: dict
+    """
+
+    def __init__(self, remote: Union[str, JobClient],
+                 worker_cls_args_overrides: dict = {}):
+        if isinstance(remote, str):
+            self.client = JobClient(remote)
+        elif isinstance(remote, JobClient):
+            self.client = remote
+        else:
+            raise TypeError(f"remote must be of type str or JobClient, got {type(remote).__name__}")  # noqa: E501
+
+        worker_spec = {
+            'cls': Worker,
+            'options': {
+                'client': self.client,
+                **worker_cls_args_overrides
+            }
+        }
+        super().__init__(worker=worker_spec)
+
+    def close(self):
+        """Close the underlying ``JobClient`` as well as the cluster."""
+        self.client.close()
+        super().close()
