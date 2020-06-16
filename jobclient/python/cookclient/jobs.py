@@ -62,7 +62,7 @@ class State(Enum):
     """
     WAITING = 'WAITING'
     """The job has not finished yet."""
-    PASSED = 'PASSED'
+    SUCCESS = 'SUCCESS'
     """The job has finished and succeeded."""
     FAILED = 'FAILED'
     """The job has finished and failed."""
@@ -81,7 +81,7 @@ class State(Enum):
 
 _JOB_STATE_LOOKUP = {
     'waiting': State.WAITING,
-    'passed': State.PASSED,
+    'success': State.SUCCESS,
     'failed': State.FAILED
 }
 
