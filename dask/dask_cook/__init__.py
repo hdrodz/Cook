@@ -2,6 +2,7 @@ import asyncio
 import json
 import logging
 import time
+import pprint
 
 from datetime import timedelta
 from threading import Thread
@@ -21,6 +22,7 @@ from distributed.deploy import ProcessInterface
 VERSION = '0.1.0'
 
 _LOG = logging.getLogger(__name__)
+_LOG.setLevel('DEBUG')
 
 
 class CookJobException(Exception):
@@ -101,7 +103,7 @@ class CookJob(ProcessInterface):
         This function implements the core logic of ``start()``, but does not
         actually start the monitoring thread.
         """
-        _LOG.debug(f"Submitting jobspec: {json.dumps(self.jobspec, indent=4)}")
+        _LOG.debug(f"Submitting jobspec: {pprint.pformat(self.jobspec, indent=4)}")
         self.uuid = self.client.submit(**self.jobspec)
         _LOG.debug(f"Jobspec submitted, got UUID {self.uuid}")
 
@@ -218,10 +220,8 @@ class Worker(CookJob):
         '--host': '0.0.0.0',
     }
 
-    def __init__(self, *,
+    def __init__(self, scheduler_address, *,
                  client: JobClient,
-                 scheduler_ip: str,
-                 scheduler_port: int,
                  name: str,
                  init_kill_poll_frequency: Union[float, timedelta] = 5,
                  monitor_poll_frequency: Union[float, timedelta] = 30,
@@ -236,7 +236,7 @@ class Worker(CookJob):
         jobspec.update(jobspec_overrides)
 
         super().__init__(client=client,
-                         scheduler=f'{scheduler_ip}:{scheduler_port}',
+                         scheduler=scheduler_address,
                          name=name,
                          init_kill_poll_frequency=init_kill_poll_frequency,
                          monitor_poll_frequency=monitor_poll_frequency,
@@ -285,7 +285,7 @@ class CookCluster(SpecCluster):
         }
         super().__init__(worker=worker_spec)
 
-    def close(self):
+    def close(self, **kwargs):
         """Close the underlying ``JobClient`` as well as the cluster."""
         self.client.close()
-        super().close()
+        super().close(**kwargs)
