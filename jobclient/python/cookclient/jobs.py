@@ -24,9 +24,9 @@ from .instance import Executor, Instance
 from .util import unix_ms_to_datetime, datetime_to_unix_ms
 
 
-class State(Enum):
+class Status(Enum):
     """
-    The curent state of a job.
+    The curent status of a job.
     """
     WAITING = 'WAITING'
     """The job is currently waiting to begin."""
@@ -34,38 +34,6 @@ class State(Enum):
     """The job is currently running."""
     COMPLETED = 'COMPLETED'
     """The job has finished running."""
-
-    def __str__(self):
-        return self.value
-
-    def __repr__(self):
-        return f'State.{self.value}'
-
-    @staticmethod
-    def from_string(name: str) -> 'State':
-        """Parse a ``State`` from a case-invariant string representation."""
-        return _JOB_STATE_LOOKUP[name.lower()]
-
-
-_JOB_STATE_LOOKUP = {
-    'waiting': State.WAITING,
-    'running': State.RUNNING,
-    'completed': State.COMPLETED
-}
-
-
-class Status(Enum):
-    """The current status of a job.
-
-    Indicates whether a job is currently running, has finished and succeeded,
-    or has finished and failed.
-    """
-    WAITING = 'WAITING'
-    """The job has not finished yet."""
-    PASSED = 'PASSED'
-    """The job has finished and succeeded."""
-    FAILED = 'FAILED'
-    """The job has finished and failed."""
 
     def __str__(self):
         return self.value
@@ -81,8 +49,40 @@ class Status(Enum):
 
 _JOB_STATUS_LOOKUP = {
     'waiting': Status.WAITING,
-    'passed': Status.PASSED,
-    'failed': Status.FAILED
+    'running': Status.RUNNING,
+    'completed': Status.COMPLETED
+}
+
+
+class State(Enum):
+    """The current state of a job.
+
+    Indicates whether a job is currently running, has finished and succeeded,
+    or has finished and failed.
+    """
+    WAITING = 'WAITING'
+    """The job has not finished yet."""
+    PASSED = 'PASSED'
+    """The job has finished and succeeded."""
+    FAILED = 'FAILED'
+    """The job has finished and failed."""
+
+    def __str__(self):
+        return self.value
+
+    def __repr__(self):
+        return f'State.{self.value}'
+
+    @staticmethod
+    def from_string(name: str) -> 'State':
+        """Parse a ``State`` from a case-invariant string representation."""
+        return _JOB_STATE_LOOKUP[name.lower()]
+
+
+_JOB_STATE_LOOKUP = {
+    'waiting': State.WAITING,
+    'passed': State.PASSED,
+    'failed': State.FAILED
 }
 
 
