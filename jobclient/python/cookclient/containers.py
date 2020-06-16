@@ -55,7 +55,7 @@ class Volume:
 
 class AbstractContainer:
     """Base class for containers to be used on Cook.
-    
+
     Implementors must override the ``kind`` property, which will help indicate
     which subclass of the container to use when working with this class's
     ``dict`` representation.
@@ -81,7 +81,7 @@ class AbstractContainer:
 
 class DockerPortMapping:
     """A Docker port mapping.
-    
+
     :param host_port: Port to open on the host machine.
     :type host_port: int
     :param container_port: Port which will be open inside the container.
@@ -114,8 +114,8 @@ class DockerPortMapping:
 
     def to_dict(self) -> dict:
         d = {
-            'host_port' = self.host_port,
-            'container_port' = self.container_port
+            'host_port': self.host_port,
+            'container_port': self.container_port
         }
         if self.protocol is not None:
             d['protocol'] = self.protocol

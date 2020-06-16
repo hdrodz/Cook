@@ -27,7 +27,7 @@ from . import util
 from .containers import AbstractContainer
 from .jobs import Application, Job
 
-CLIENT_VERSION = '0.2.0'
+CLIENT_VERSION = '0.2.1'
 
 _LOG = logging.getLogger(__name__)
 _LOG.addHandler(logging.StreamHandler())
@@ -169,7 +169,7 @@ class JobClient:
         if labels is not None:
             payload['labels'] = labels
         if max_runtime is not None:
-            payload['max-runtime'] = max_runtime.total_seconds()
+            payload['max-runtime'] = max_runtime.total_seconds() * 1000
         if name is not None:
             payload['name'] = name
         if priority is not None:
