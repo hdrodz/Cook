@@ -208,7 +208,7 @@ class Worker(CookJob):
     :type jobspec_overrides: dict
     """
     _DEFAULT_JOBSPEC = {
-        'command': 'dask-worker',
+        'command': 'dask-worker %(args)s %(scheduler)s',
         'name': 'dask-%s',
 
         'cpus': 1.0,
@@ -235,7 +235,10 @@ class Worker(CookJob):
         worker_args.update(worker_args_overrides)
 
         jobspec = copy.deepcopy(Worker._DEFAULT_JOBSPEC)
-        # jobspec['command'] %= Worker._format_worker_args(worker_args)
+        jobspec['command'] %= {
+            'args': Worker._format_worker_args(worker_args),
+            'scheduler': scheduler_address
+        }
         jobspec['name'] %= name
         jobspec.update(jobspec_overrides)
 
